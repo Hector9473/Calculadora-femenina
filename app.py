@@ -9,38 +9,55 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS avanzados para las tarjetas del calendario dinámico
+# --- PALETA DE COLORES AVANZADA Y ESTILOS UI ---
 st.markdown("""
     <style>
-    .metric-card {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid #ff4b4b;
-        margin-bottom: 10px;
+    /* Estilos generales del contenedor principal */
+    .reportview-container {
+        background-color: #FAFAFB;
     }
-    .alert-green { background-color: #d4edda; color: #155724; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
-    .alert-yellow { background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
-    .alert-red { background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
     
-    /* Estilos para los cuadros del calendario */
+    /* Alertas del Estado Actual */
+    .alert-green { background-color: #E8F5E9; color: #1B5E20; padding: 14px; border-radius: 10px; font-weight: bold; border-left: 5px solid #4CAF50; margin-bottom: 15px; }
+    .alert-yellow { background-color: #FFFDE7; color: #F57F17; padding: 14px; border-radius: 10px; font-weight: bold; border-left: 5px solid #FBC02D; margin-bottom: 15px; }
+    .alert-red { background-color: #FFEBEE; color: #B71C1C; padding: 14px; border-radius: 10px; font-weight: bold; border-left: 5px solid #EF5350; margin-bottom: 15px; }
+    
+    /* Estilos para la cuadrícula del calendario (Modern Cards) */
     .dia-box {
-        padding: 10px;
-        border-radius: 8px;
+        padding: 14px;
+        border-radius: 12px;
         text-align: center;
-        margin-bottom: 10px;
-        min-height: 100px;
-        box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
-        color: #333333;
+        margin-bottom: 12px;
+        min-height: 110px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+        transition: transform 0.2s;
+        color: #2C3E50;
     }
-    .box-menstruacion { background-color: #f8d7da; border: 2px solid #f5c6cb; }
-    .box-folicular { background-color: #e2f0d9; border: 2px solid #c5e1a5; }
-    .box-ovulacion { background-color: #fff3cd; border: 2px solid #ffeeba; }
-    .box-lutea { background-color: #e8daef; border: 2px solid #d7bde2; }
+    .dia-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+    }
     
-    .dia-numero { font-size: 1.2rem; font-weight: bold; margin-bottom: 2px; }
-    .dia-fecha { font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px; }
-    .dia-fase { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+    /* Clases específicas de la paleta mejorada */
+    .box-menstruacion { background-color: #FFE0E0; border: 1px solid #FFA7A7; }
+    .box-folicular { background-color: #E6F4EA; border: 1px solid #A8DABC; }
+    .box-ovulacion { background-color: #FFF9C4; border: 1px solid #FFF176; }
+    .box-lutea { background-color: #EDE7F6; border: 1px solid #D1C4E9; }
+    
+    /* Tipografías dentro de las tarjetas */
+    .dia-numero { font-size: 1.3rem; font-weight: 800; color: #1A252C; margin-bottom: 2px; }
+    .dia-fecha { font-size: 0.8rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; margin-bottom: 6px; }
+    .dia-fase { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    
+    /* Texto de Leyendas */
+    .leyenda-item {
+        padding: 8px; 
+        border-radius: 8px; 
+        text-align: center; 
+        font-size: 0.85rem; 
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -50,12 +67,10 @@ st.subheader("Optimiza tus pesas, running y ciclismo según tu biología")
 # --- BARRA LATERAL: INPUTS DEL USUARIO ---
 st.sidebar.header("⚙️ Configuración del Ciclo")
 
-# Inputs de fecha requeridos
 fecha_inicio = st.sidebar.date_input("Fecha de inicio del último ciclo:", datetime.date.today())
 duracion_ciclo = st.sidebar.slider("Duración promedio del ciclo (días):", min_value=21, max_value=35, value=28)
 
-# Simulación de fecha de finalización (para estimar duración del sangrado)
-fecha_fin_sangrado = st.sidebar.date_input("Fecha de finalización del sangrado (estimada o real):", fecha_inicio + datetime.timedelta(days=5))
+fecha_fin_sangrado = st.sidebar.date_input("Fecha de finalización del sangrado:", fecha_inicio + datetime.timedelta(days=5))
 duracion_sangrado = (fecha_fin_sangrado - fecha_inicio).days
 
 # --- LÓGICA DE PROCESAMIENTO ---
@@ -63,7 +78,6 @@ fecha_actual = datetime.date.today()
 dias_desde_inicio = (fecha_actual - fecha_inicio).days
 dia_actual_ciclo = (dias_desde_inicio % duracion_ciclo) + 1
 
-# Determinar datos según el día del ciclo
 def obtener_datos_fase(dia):
     if dia <= duracion_sangrado:
         return {
@@ -140,43 +154,38 @@ with tab1:
 
 with tab2:
     st.header("📅 Vista de Calendario por Bloques")
-    st.write("Cada cuadro representa un día de tu ciclo. Los colores te indican la fase y nivel de riesgo/fertilidad.")
+    st.write("Cada cuadro representa un día de tu ciclo. Los colores te indican la fase metabólica y el nivel de fertilidad.")
     
-    # Leyenda de colores explicativa
+    # Leyenda de colores interactiva y estilizada con CSS
     leyenda_cols = st.columns(4)
-    leyenda_cols[0].markdown("<div style='background-color:#f8d7da; padding:5px; border-radius:5px; text-align:center; font-size:0.85rem; font-weight:bold;'>🟥 Menstruación (Infértil)</div>", unsafe_allow_html=True)
-    leyenda_cols[1].markdown("<div style='background-color:#e2f0d9; padding:5px; border-radius:5px; text-align:center; font-size:0.85rem; font-weight:bold;'>🟩 Folicular (Fértil Moderado)</div>", unsafe_allow_html=True)
-    leyenda_cols[2].markdown("<div style='background-color:#fff3cd; padding:5px; border-radius:5px; text-align:center; font-size:0.85rem; font-weight:bold;'>🟨 Ovulación (Máxima Fertilidad)</div>", unsafe_allow_html=True)
-    leyenda_cols[3].markdown("<div style='background-color:#e8daef; padding:5px; border-radius:5px; text-align:center; font-size:0.85rem; font-weight:bold;'>🟪 Fase Lútea (Infértil)</div>", unsafe_allow_html=True)
+    with leyenda_cols[0]: st.markdown("<div class='leyenda-item' style='background-color:#FFE0E0; color:#B71C1C;'>🌸 Menstruación</div>", unsafe_allow_html=True)
+    with leyenda_cols[1]: st.markdown("<div class='leyenda-item' style='background-color:#E6F4EA; color:#1B5E20;'>🌱 Fase Folicular</div>", unsafe_allow_html=True)
+    with leyenda_cols[2]: st.markdown("<div class='leyenda-item' style='background-color:#FFF9C4; color:#F57F17;'>🔥 Ovulación</div>", unsafe_allow_html=True)
+    with leyenda_cols[3]: st.markdown("<div class='leyenda-item' style='background-color:#EDE7F6; color:#4A148C;'>🧘‍♀️ Fase Lútea</div>", unsafe_allow_html=True)
     
     st.write("")
     
-    # Crear la cuadrícula de 7 columnas (como una semana real)
+    # Crear la cuadrícula adaptada de 7 columnas
     columnas_calendario = st.columns(7)
     
     for i in range(1, duracion_ciclo + 1):
-        # Determinar en qué columna va el día actual (de 0 a 6)
         indice_columna = (i - 1) % 7
-        
         fecha_bucle = fecha_inicio + datetime.timedelta(days=i-1)
         datos_bucle = obtener_datos_fase(i)
         
-        # Formatear el cuadro en HTML para inyectar en Streamlit
+        # Inyección HTML del cuadro con los nuevos colores de borde y fondo
         html_cuadro = f"""
         <div class="dia-box {datos_bucle['clase_box']}">
-            <div class="dia-numero">Día {i}</div>
+            <div class="dia-numero">{i}</div>
             <div class="dia-fecha">{fecha_bucle.strftime('%d %b')}</div>
-            <div class="dia-fase">{datos_bucle['fase']}</div>
+            <div class="dia-fase" style="color: inherit;">{datos_bucle['fase']}</div>
         </div>
         """
         
-        # Dibujar el cuadro en la columna correspondiente
         with columnas_calendario[indice_columna]:
             st.markdown(html_cuadro, unsafe_allow_html=True)
-            
-            # Botón expandible debajo de cada cuadro para ver detalles rápidos de entrenamiento
             with st.expander("🔍 Deporte"):
-                st.caption(f"**Ej. Funcional:** {datos_bucle['ejercicio']}")
+                st.caption(f"**Funcional:** {datos_bucle['ejercicio']}")
                 st.caption(f"**Pesas:** {datos_bucle['pesas']}")
                 st.caption(f"**Running:** {datos_bucle['running']}")
                 st.caption(f"**Ciclismo:** {datos_bucle['ciclismo']}")
