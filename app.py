@@ -1,12 +1,10 @@
 import streamlit as st
 from datetime import datetime, timedelta
-import calendar
 
 # Configuración de la página de Streamlit
 st.set_page_config(page_title="Rendimiento y Ciclo Menstrual", page_icon="🩸", layout="centered")
 
 # Diccionario dinámico con la información de cada fase
-# Los días se calculan en proporción a la duración del ciclo elegido
 def obtener_datos_fase(fase, duracion_ciclo):
     # Ajuste dinámico de días aproximados según la duración del ciclo
     if duracion_ciclo == 28:
@@ -130,12 +128,13 @@ else:
             
     with col_entreno:
         st.subheader("🏋️‍♀️ Ejercicio para Hoy")
-        for deporte, rec in info_hoy["recommendaciones"].items():
+        # CORREGIDO: "recomendaciones" con una sola 'c' para coincidir exactamente con el diccionario
+        for deporte, rec in info_hoy["recomendaciones"].items():
             st.write(f"**{deporte}:** {rec}")
             
     st.divider()
     
-    # --- NUEVA SECCIÓN DE CALENDARIO VISUAL SIMULADO ---
+    # --- SECCIÓN DE CALENDARIO VISUAL SIMULADO ---
     st.subheader("🗓️ Calendario Visual de Proyecciones")
     st.write("Selecciona una fecha en el simulador para ver qué fase te corresponderá y planificar tu rutina:")
     
