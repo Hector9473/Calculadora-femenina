@@ -1,809 +1,117 @@
+]
 """
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║              🌸 CycleFit Tracker v1.0                        ║
-║                                                              ║
-║     Seguimiento del ciclo menstrual y entrenamiento          ║
-║                                                              ║
-║  Autor : Hector Salazar                                     ║
-║  Licencia : MIT                                              ║
-║  Lenguaje : Python 3.12+                                     ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-"""
-
-# ============================================================
-# IMPORTACIONES
-# ============================================================
-
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 
 from datetime import datetime, timedelta
 
-import calendar
-
-import json
-
-import os
-
-from pathlib import Path
-
-import matplotlib.pyplot as plt
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-
-
-# ============================================================
-# CONFIGURACIÓN GENERAL
-# ============================================================
-
-APP_NAME = "CycleFit Tracker"
-
-VERSION = "1.0"
-
-WINDOW_WIDTH = 1450
-
-WINDOW_HEIGHT = 900
-
-JSON_FILE = "datos.json"
-
-
-
-# ============================================================
-# PALETA DE COLORES
-# (Pastel accesible)
-# ============================================================
-
-COLORS = {
-
-    "background": "#FAFAFA",
-
-    "card": "#FFFFFF",
-
-    "border": "#D8D8D8",
-
-    "text": "#222222",
-
-    "button": "#9EC5FE",
-
-    "button_hover": "#7FB3FF",
-
-    "menstruacion": "#FFD6E8",
-
-    "folicular": "#D8F3DC",
-
-    "ovulacion": "#FFF3BF",
-
-    "lutea": "#E9D8FD"
-
+# Diccionario con la información detallada de cada fase del ciclo
+FASES_CICLO = {
+    "Menstrual": {
+        "dias": (1, 5),
+        "hormonas": "Estrógenos y progesterona en niveles muy bajos.",
+        "rendimiento": "Energía reducida, mayor percepción de fatiga, pero buena tolerancia al dolor inicial.",
+        "sintomas": ["Cólicos abdominales", "Fatiga o letargo", "Dolor lumbar", "Retención de líquidos leve"],
+        "recomendaciones": {
+            "Funcional": "Movilidad articular, yoga suave, estiramientos y ejercicios de baja intensidad sin impacto.",
+            "Gym": "Ejercicios con cargas livianas a moderadas, priorizando repeticiones altas si hay energía, o descanso activo.",
+            "Running": "Trote suave o caminata ligera. Evitar entrenamientos de alta intensidad (HIIT) o fondo largo.",
+            "Ciclismo": "Rodajes suaves y planos en zona 1-2. Evitar puertos exigentes o series de potencia."
+        }
+    },
+    "Folicular": {
+        "dias": (6, 13),
+        "hormonas": "Los estrógenos empiezan a subir progresivamente.",
+        "rendimiento": "Alto nivel de energía, optimismo, mayor fuerza, recuperación rápida y alta capacidad anaeróbica.",
+        "sintomas": ["Aumento gradual de la vitalidad", "Mejor estado de ánimo", "Piel más clara"],
+        "recomendaciones": {
+            "Funcional": "Entrenamientos dinámicos, pliometría, circuitos de alta intensidad y fuerza funcional.",
+            "Gym": "Momento ideal para buscar marcas personales (PR), levantar pesas pesadas e hipertrofia.",
+            "Running": "Series de velocidad, intervalos (HIIT) y tiradas largas a ritmos alegres.",
+            "Ciclismo": "Entrenamientos de potencia, intervalos cortos de alta intensidad y escalada."
+        }
+    },
+    "Ovulatoria": {
+        "dias": (14, 15),
+        "hormonas": "Pico máximo de estrógenos y pico de la hormona luteinizante (LH).",
+        "rendimiento": "Fuerza máxima y máxima energía, aunque hay un pequeño riesgo de lesión de rodilla/ligamentos por laxitud.",
+        "sintomas": ["Mayor libido", "Dolor leve en un lado del abdomen (Mittelschmerz)", "Flujo cervical elástico"],
+        "recomendaciones": {
+            "Funcional": "Ejercicios de estabilidad de core, control neuromuscular y fuerza explosiva con buena técnica.",
+            "Gym": "Excelente para potencia máxima y levantamientos pesados, cuidando muy bien el calentamiento articular.",
+            "Running": "Rendimiento óptimo para competir o hacer marcas en distancias medias/largas.",
+            "Ciclismo": "Salidas fuertes en grupeta o crono, aprovechando el pico de máxima capacidad respiratoria y fuerza."
+        }
+    },
+    "Lútea": {
+        "dias": (16, 28),
+        "hormonas": "Aumento de progesterona y caída posterior si no hay fecundación (fase premenstrual al final).",
+        "rendimiento": "La temperatura corporal sube; la resistencia cardiovascular disminuye ligeramente al inicio y decae la energía al final.",
+        "sintomas": ["Ansiedad o cambios de humor", "Sensibilidad en los senos", "Hinchazón o gases", "Fatiga premenstrual"],
+        "recomendaciones": {
+            "Funcional": "Pilates, entrenamientos de fuerza moderada controlando la respiración y bajando la exigencia.",
+            "Gym": "Mantener pesos moderados, priorizar técnica y evitar llegar al fallo muscular absoluto en la última semana.",
+            "Running": "Carrera continua a ritmo constante y cómodo (zona aeróbica). Evitar sesiones agónicas de velocidad.",
+            "Ciclismo": "Rodajes base estables de larga duración pero a baja intensidad conversacional."
+        }
+    }
 }
 
-
-
-# ============================================================
-# FUENTES
-# ============================================================
-
-FONT_SMALL = ("Segoe UI", 10)
-
-FONT_NORMAL = ("Segoe UI", 11)
-
-FONT_TITLE = ("Segoe UI", 18, "bold")
-
-FONT_BIG = ("Segoe UI", 26, "bold")
-
-
-
-# ============================================================
-# SÍNTOMAS DISPONIBLES
-# ============================================================
-
-SYMPTOMS = [
-
-    "Cólicos",
-
-    "Dolor de cabeza",
-
-    "Migraña",
-
-    "Fatiga",
-
-    "Inflamación",
-
-    "Antojos",
-
-    "Ansiedad",
-
-    "Estrés",
-
-    "Irritabilidad",
-
-    "Acné",
-
-    "Sensibilidad senos",
-
-    "Náuseas"
-
-]
-
-
-
-# ============================================================
-# BASE DE DATOS JSON
-# ============================================================
-
-class JsonDatabase:
-
-    """
-    Guarda toda la información del programa.
-    """
-
-    def __init__(self):
-
-        self.file = JSON_FILE
-
-        self.data = {
-
-            "config":{
-
-                "cycle_length":28,
-
-                "period_length":5
-
-            },
-
-            "periods":[],
-
-            "symptoms":{},
-
-            "energy":{},
-
-            "training":{},
-
-            "notes":{}
-
-        }
-
-        self.load()
-
-
-
-    def load(self):
-
-        if Path(self.file).exists():
-
-            try:
-
-                with open(
-
-                    self.file,
-
-                    "r",
-
-                    encoding="utf8"
-
-                ) as f:
-
-                    self.data = json.load(f)
-
-            except:
-
-                self.save()
-
-        else:
-
-            self.save()
-
-
-
-    def save(self):
-
-        with open(
-
-            self.file,
-
-            "w",
-
-            encoding="utf8"
-
-        ) as f:
-
-            json.dump(
-
-                self.data,
-
-                f,
-
-                indent=4,
-
-                ensure_ascii=False
-
-            )
-
-
-
-    def get_cycle(self):
-
-        return self.data["config"]["cycle_length"]
-
-
-
-    def set_cycle(self,value):
-
-        self.data["config"]["cycle_length"]=value
-
-        self.save()
-
-
-
-    def get_period(self):
-
-        return self.data["config"]["period_length"]
-
-
-
-    def set_period(self,value):
-
-        self.data["config"]["period_length"]=value
-
-        self.save()
-
-
-
-# ============================================================
-# MOTOR DEL CICLO
-# ============================================================
-
-class CycleEngine:
-
-    """
-    Toda la lógica del ciclo menstrual.
-    """
-
-    def __init__(self,db):
-
-        self.db = db
-
-
-
-    def get_phase(self,day):
-
-        cycle = self.db.get_cycle()
-
-        period = self.db.get_period()
-
-        ovulation = cycle - 14
-
-        if day <= period:
-
-            return "Menstruación"
-
-        elif day < ovulation - 2:
-
-            return "Folicular"
-
-        elif ovulation - 2 <= day <= ovulation + 2:
-
-            return "Ovulación"
-
-        else:
-
-            return "Lútea"
-
-
-
-    def get_phase_color(self,phase):
-
-        colors = {
-
-            "Menstruación":COLORS["menstruacion"],
-
-            "Folicular":COLORS["folicular"],
-
-            "Ovulación":COLORS["ovulacion"],
-
-            "Lútea":COLORS["lutea"]
-
-        }
-
-        return colors[phase]
-
-
-
-    def get_energy(self,phase):
-
-        values = {
-
-            "Menstruación":2,
-
-            "Folicular":4,
-
-            "Ovulación":5,
-
-            "Lútea":3
-
-        }
-
-        return values[phase]
-
-
-
-    def fertility(self,day):
-
-        cycle = self.db.get_cycle()
-
-        ovulation = cycle - 14
-
-        if ovulation - 2 <= day <= ovulation + 2:
-
-            return "🔴 Alta"
-
-        elif ovulation - 4 <= day <= ovulation + 4:
-
-            return "🟡 Media"
-
-        return "🟢 Baja"
-
-
-
-    def next_period(self,last_date):
-
-        return last_date + timedelta(
-
-            days=self.db.get_cycle()
-
-        )
-        # ============================================================
-# CLASE PRINCIPAL
-# ============================================================
-
-class CycleFitApp(tk.Tk):
-
-    def __init__(self):
-
-        super().__init__()
-
-        self.db = JsonDatabase()
-
-        self.engine = CycleEngine(self.db)
-
-        self.title(f"{APP_NAME}  v{VERSION}")
-
-        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-
-        self.minsize(1200, 750)
-
-        self.configure(bg=COLORS["background"])
-
-        # Fecha actual
-
-        self.today = datetime.today()
-
-        self.current_year = self.today.year
-
-        self.current_month = self.today.month
-
-        self.selected_day = self.today.day
-
-        self.build_layout()
-
-        self.draw_calendar()
-
-        self.update_information_panel()
-
-
-# ============================================================
-# INTERFAZ
-# ============================================================
-
-    def build_layout(self):
-
-        # ---------------------------
-        # CABECERA
-        # ---------------------------
-
-        header = tk.Frame(
-
-            self,
-
-            bg=COLORS["background"]
-
-        )
-
-        header.pack(fill="x", padx=15, pady=10)
-
-        tk.Label(
-
-            header,
-
-            text="🌸 CycleFit Tracker",
-
-            font=FONT_BIG,
-
-            bg=COLORS["background"],
-
-            fg=COLORS["text"]
-
-        ).pack(side="left")
-
-        self.month_label = tk.Label(
-
-            header,
-
-            font=FONT_TITLE,
-
-            bg=COLORS["background"],
-
-            fg=COLORS["text"]
-
-        )
-
-        self.month_label.pack(side="right")
-
-
-
-        # ---------------------------
-        # CONTENIDO
-        # ---------------------------
-
-        content = tk.Frame(
-
-            self,
-
-            bg=COLORS["background"]
-
-        )
-
-        content.pack(
-
-            fill="both",
-
-            expand=True,
-
-            padx=15,
-
-            pady=10
-
-        )
-
-
-
-        # ---------------------------
-        # CALENDARIO
-        # ---------------------------
-
-        self.calendar_frame = tk.LabelFrame(
-
-            content,
-
-            text="Calendario",
-
-            font=FONT_NORMAL,
-
-            bg=COLORS["card"],
-
-            padx=10,
-
-            pady=10
-
-        )
-
-        self.calendar_frame.pack(
-
-            side="left",
-
-            fill="both",
-
-            expand=True
-
-        )
-
-
-
-        # ---------------------------
-        # PANEL DERECHO
-        # ---------------------------
-
-        self.right_panel = tk.LabelFrame(
-
-            content,
-
-            text="Información del día",
-
-            bg=COLORS["card"],
-
-            font=FONT_NORMAL,
-
-            width=360,
-
-            padx=15,
-
-            pady=15
-
-        )
-
-        self.right_panel.pack(
-
-            side="right",
-
-            fill="y",
-
-            padx=(15,0)
-
-        )
-
-        self.right_panel.pack_propagate(False)
-
-
-
-        # ---------------------------
-        # PIE
-        # ---------------------------
-
-        footer = tk.Frame(
-
-            self,
-
-            bg=COLORS["background"]
-
-        )
-
-        footer.pack(fill="x")
-
-        tk.Label(
-
-            footer,
-
-            text="CycleFit Tracker © 2026",
-
-            bg=COLORS["background"],
-
-            fg="gray"
-
-        ).pack(pady=5)
-
-
-
-# ============================================================
-# DIBUJAR CALENDARIO
-# ============================================================
-
-    def draw_calendar(self):
-
-        for widget in self.calendar_frame.winfo_children():
-
-            widget.destroy()
-
-        meses = [
-
-            "Enero","Febrero","Marzo","Abril",
-
-            "Mayo","Junio","Julio","Agosto",
-
-            "Septiembre","Octubre","Noviembre","Diciembre"
-
-        ]
-
-        self.month_label.config(
-
-            text=f"{meses[self.current_month-1]} {self.current_year}"
-
-        )
-
-        nav = tk.Frame(
-
-            self.calendar_frame,
-
-            bg=COLORS["card"]
-
-        )
-
-        nav.pack(fill="x", pady=(0,10))
-
-        tk.Button(
-
-            nav,
-
-            text="◀",
-
-            width=4,
-
-            command=self.previous_month
-
-        ).pack(side="left")
-
-        tk.Button(
-
-            nav,
-
-            text="▶",
-
-            width=4,
-
-            command=self.next_month
-
-        ).pack(side="right")
-
-        days = [
-
-            "Lun","Mar","Mié",
-
-            "Jue","Vie","Sáb","Dom"
-
-        ]
-
-        header = tk.Frame(
-
-            self.calendar_frame,
-
-            bg=COLORS["card"]
-
-        )
-
-        header.pack()
-
-        for name in days:
-
-            tk.Label(
-
-                header,
-
-                text=name,
-
-                width=12,
-
-                font=("Segoe UI",10,"bold"),
-
-                bg=COLORS["card"]
-
-            ).pack(side="left")
-
-        grid = tk.Frame(
-
-            self.calendar_frame,
-
-            bg=COLORS["card"]
-
-        )
-
-        grid.pack()
-
-        cal = calendar.monthcalendar(
-
-            self.current_year,
-
-            self.current_month
-
-        )
-
-        for row in cal:
-
-            row_frame = tk.Frame(
-
-                grid,
-
-                bg=COLORS["card"]
-
-            )
-
-            row_frame.pack()
-
-            for number in row:
-
-                if number == 0:
-
-                    tk.Label(
-
-                        row_frame,
-
-                        text="",
-
-                        width=12,
-
-                        height=5,
-
-                        bg=COLORS["card"]
-
-                    ).pack(side="left", padx=2, pady=2)
-
-                    continue
-
-                cycle_day = ((number-1) %
-
-                             self.db.get_cycle()) + 1
-
-                phase = self.engine.get_phase(cycle_day)
-
-                color = self.engine.get_phase_color(phase)
-
-                icon = {
-
-                    "Menstruación":"🩷",
-
-                    "Folicular":"🟩",
-
-                    "Ovulación":"🟨",
-
-                    "Lútea":"🟪"
-
-                }[phase]
-
-                text = f"{number}\n{icon}"
-
-                button = tk.Button(
-
-                    row_frame,
-
-                    text=text,
-
-                    bg=color,
-
-                    relief="flat",
-
-                    width=12,
-
-                    height=5,
-
-                    command=lambda d=number:
-
-                        self.select_day(d)
-
-                )
-
-                button.pack(
-
-                    side="left",
-
-                    padx=2,
-
-                    pady=2
-
-                )
-
-
-
-# ============================================================
-# CAMBIAR MES
-# ============================================================
-
-    def previous_month(self):
-
-        self.current_month -= 1
-
-        if self.current_month == 0:
-
-            self.current_month = 12
-
-            self.current_year -= 1
-
-        self.draw_calendar()
-
-
-
-    def next_month(self):
-
-        self.current_month += 1
-
-        if self.current_month == 13:
-
-            self.current_month = 1
-
-            self.current_year += 1
-
-        self.draw_calendar()
-
-
-
-# ============================================================
-# SELECCIONAR DÍA
-# ============================================================
-
-    def select_day(self, day):
-
-        self.selected_day = day
-
-        self.update_information_panel()
+def determinar_fase(dia_ciclo):
+    """Retorna el nombre de la fase según el día del ciclo actual."""
+    for fase, datos in FASES_CICLO.items():
+        inicio, fin = datos["dias"]
+        if inicio <= dia_ciclo <= fin:
+            return fase
+    return "Lútea" # Por si el ciclo se alarga más de 28 días
+
+def calcular_dia_actual(fecha_inicio_str):
+    """Calcula cuántos días han pasado desde la fecha de la última regla."""
+    formato = "%Y-%m-%d"
+    fecha_inicio = datetime.strptime(fecha_inicio_str, formato)
+    hoy = datetime.now()
+    diferencia = (hoy - fecha_inicio).days
+    # Asumimos un ciclo estándar de 28 días para reiniciar el conteo modular si pasa de 28
+    dia_ciclo = (diferencia % 28) + 1
+    return dia_ciclo, diferencia
+
+def main():
+    print("==================================================")
+    print("   CALENDARIO DE CICLO MENSTRUAL Y RENDIMIENTO    ")
+    print("==================================================")
+    
+    # Ejemplo interactivo o predeterminado
+    entrada_usuario = input("Ingresa la fecha de tu último periodo (YYYY-MM-DD) o presiona Enter para usar una de prueba: ").strip()
+    
+    if not entrada_usuario:
+        # Fecha de prueba simulada (hace 10 días)
+        fecha_prueba = datetime.now() - timedelta(days=10)
+        entrada_usuario = fecha_prueba.strftime("%Y-%m-%d")
+        print(f">> Usando fecha simulada de hace 10 días: {entrada_usuario}")
         
+    try:
+        dia_ciclo, dias_totales = calcular_dia_actual(entrada_usuario)
+        fase_actual = determinar_fase(dia_ciclo)
+        info = FASES_CICLO[fase_actual]
+        
+        print("\n----------------- RESULTADOS -----------------")
+        print(f"Días desde el inicio registrado: {dias_totales} días")
+        print(f"Días estimándose en tu ciclo actual: Día {dia_ciclo} de 28")
+        print(f"Fase actual en la que te encuentras: {fase_actual.upper()}")
+        print(f"Panorama hormonal: {info['hormonas']}")
+        print(f"Impacto en rendimiento: {info['rendimiento']}")
+        
+        print("\n--- POSIBLES SÍNTOMAS FRECUENTES ---")
+        for s in info["sintomas"]:
+            print(f" • {s}")
+            
+        print("\n--- RECOMENDACIONES DE ENTRENAMIENTO ---")
+        for deporte, rec in info["recomendaciones"].items():
+            print(f" [{deporte}]: {rec}")
+            
+        print("\n==================================================")
+        print("¡Escucha a tu cuerpo y adapta las cargas, no las suspendas!")
+        
+    except ValueError:
+        print("Formato de fecha incorrecto. Por favor usa YYYY-MM-DD.")
+
+if __name__ == "__main__":
+    main()
