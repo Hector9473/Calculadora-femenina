@@ -1,6 +1,8 @@
-"""
-
+import streamlit as st
 from datetime import datetime, timedelta
+
+# Configuración de la página de Streamlit
+st.set_page_config(page_title="Rendimiento y Ciclo Menstrual", page_icon="🩸", layout="centered")
 
 # Diccionario con la información detallada de cada fase del ciclo
 FASES_CICLO = {
@@ -55,62 +57,53 @@ FASES_CICLO = {
 }
 
 def determinar_fase(dia_ciclo):
-    """Retorna el nombre de la fase según el día del ciclo actual."""
+    # Retorna el nombre de la fase según el día del ciclo actual
     for fase, datos in FASES_CICLO.items():
         inicio, fin = datos["dias"]
         if inicio <= dia_ciclo <= fin:
             return fase
-    return "Lútea" # Por si el ciclo se alarga más de 28 días
+    return "Lútea"
 
-def calcular_dia_actual(fecha_inicio_str):
-    """Calcula cuántos días han pasado desde la fecha de la última regla."""
-    formato = "%Y-%m-%d"
-    fecha_inicio = datetime.strptime(fecha_inicio_str, formato)
-    hoy = datetime.now()
+def calcular_dia_actual(fecha_inicio):
+    # Calculates days passed since period start date
+    hoy = datetime.now().date()
     diferencia = (hoy - fecha_inicio).days
-    # Asumimos un ciclo estándar de 28 días para reiniciar el conteo modular si pasa de 28
     dia_ciclo = (diferencia % 28) + 1
     return dia_ciclo, diferencia
 
-def main():
-    print("==================================================")
-    print("   CALENDARIO DE CICLO MENSTRUAL Y RENDIMIENTO    ")
-    print("==================================================")
-    
-    # Ejemplo interactivo o predeterminado
-    entrada_usuario = input("Ingresa la fecha de tu último periodo (YYYY-MM-DD) o presiona Enter para usar una de prueba: ").strip()
-    
-    if not entrada_usuario:
-        # Fecha de prueba simulada (hace 10 días)
-        fecha_prueba = datetime.now() - timedelta(days=10)
-        entrada_usuario = fecha_prueba.strftime("%Y-%m-%d")
-        print(f">> Usando fecha simulada de hace 10 días: {entrada_usuario}")
-        
-    try:
-        dia_ciclo, dias_totales = calcular_dia_actual(entrada_usuario)
-        fase_actual = determinar_fase(dia_ciclo)
-        info = FASES_CICLO[fase_actual]
-        
-        print("\n----------------- RESULTADOS -----------------")
-        print(f"Días desde el inicio registrado: {dias_totales} días")
-        print(f"Días estimándose en tu ciclo actual: Día {dia_ciclo} de 28")
-        print(f"Fase actual en la que te encuentras: {fase_actual.upper()}")
-        print(f"Panorama hormonal: {info['hormonas']}")
-        print(f"Impacto en rendimiento: {info['rendimiento']}")
-        
-        print("\n--- POSIBLES SÍNTOMAS FRECUENTES ---")
-        for s in info["sintomas"]:
-            print(f" • {s}")
-            
-        print("\n--- RECOMENDACIONES DE ENTRENAMIENTO ---")
-        for deporte, rec in info["recomendaciones"].items():
-            print(f" [{deporte}]: {rec}")
-            
-        print("\n==================================================")
-        print("¡Escucha a tu cuerpo y adapta las cargas, no las suspendas!")
-        
-    except ValueError:
-        print("Formato de fecha incorrecto. Por favor usa YYYY-MM-DD.")
+# Interfaz de usuario con Streamlit
+st.title("🩸 Calendario de Ciclo Menstrual y Deporte")
+st.write("Optimiza tus entrenamientos según tu momento biológico.")
 
-if __name__ == "__main__":
-    main()
+# Selector de fecha integrado
+fecha_seleccionada = st.date_input("Selecciona la fecha de tu última regla (FUR):", datetime.now().date())
+
+if fecha_seleccionada:
+    dia_ciclo, dias_totales = calcular_dia_actual(fecha_seleccionada)
+    fase_actual = determinar_fase(dia_ciclo)
+    info = FASES_CICLO[fase_actual]
+    
+    st.divider()
+    
+    # Métricas principales
+    col1, col2 = st.columns(2)
+    col1.metric(label="Fase Actual", value=fase_actual.upper())
+    col2.metric(label="Día del Ciclo", value=f"Día {dia_ciclo} de 28")
+    
+    # Detalles del estado físico
+    st.subheader("📊 Estado Hormonal y Rendimiento")
+    st.info(f"**Hormonas:** {info['hormonas']}")
+    st.warning(f"**Impacto físico:** {info['rendimiento']}")
+    
+    # Síntomas
+    st.subheader("🧠 Posibles Síntomas Frecuentes")
+    for s in info["sintomas"]:
+        st.write(f"• {s}")
+        
+    # Recomendaciones deportivas
+    st.subheader("🏋️‍♀️ Recomendaciones de Entrenamiento")
+    for deporte, rec in info["recomendaciones"].items():
+        with st.expander(f"Recomendación para **{deporte}**"):
+            st.write(rec)
+            
+    st.success("¡Escucha a tu cuerpo y adapta las cargas, no las suspendas!")
